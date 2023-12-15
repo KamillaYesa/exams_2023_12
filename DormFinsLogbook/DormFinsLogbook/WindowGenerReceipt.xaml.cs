@@ -23,78 +23,96 @@ namespace DormFinsLogbook
                 TenantsComboBox.ItemsSource = db.Tenants
                     .Where(t => !string.IsNullOrEmpty(t.TenantFullName) && t.DateEviction == null)
                     .ToList();
-                TenantsComboBox.DisplayMemberPath = "FullNameTenant";
+                TenantsComboBox.DisplayMemberPath = "TenantFullName";
                 TenantsComboBox.SelectedValuePath = "ID_Tenant";
+                TenantsComboBox.SelectedItem = TenantsComboBox.Items[0];
             }
         }
 
         // Кнопка для генерации Word квитанций
         private void btnReceipt_Click(object sender, RoutedEventArgs e)
         {
-            var selectedResidentId = (int)TenantsComboBox.SelectedValue;
-
-            var wordApp = new Word.Application();
-            wordApp.Visible = false;
-            var wordDoc = wordApp.Documents.Add();
-
-            using (var db = new DormitoryManagerBDEntities())
+            // Проверка, выбран ли элемент в раскрывающемся списке
+            var selectedResident = TenantsComboBox.SelectedItem as Tenant;
+            if (selectedResident != null)
             {
-                // Фиксируем выбранного жильца для дальнйшей работы
-                var resident = db.Tenants.FirstOrDefault(r => r.ID_tenant == selectedResidentId);
-                if (resident == null)
-                {
-                    throw new Exception("Такого жильца нету в базе данных.");
-                }
+                // Получение ID выбранного жильца
+                var selectedResidentId = (int)selectedResident.ID_tenant;
 
-                // счётчик даты для более точного определения дня выплаты квитанции
-                DateTime DataPay;
-                int year = DateTime.Now.Year;
-                int month = DateTime.Now.Month;
-                int day = resident.DateChecin.Value.Day;
-                if (day > DateTime.Now.Day)
+                // Создание объекта квитанции
+                var receipt = new Receipt()
                 {
-                    DataPay = new DateTime(year, month, day);
-                }
-                else
+                    ReceiptTenant = selectedResidentId, // выбранный жилец из выпадающего списка
+                    PayLiving = new Random().Next(1000, 5000), // имитация необходимой оплаты за проживание
+                    PayData = DateTime.Now // дата выплаты квитанции
+                };
+
+                // Создание документа Word
+                var wordApp = new Word.Application();
+                wordApp.Visible = false;
+                var wordDoc = wordApp.Documents.Add();
+
+                // Фиксируем выбранного жильца для дальнйшей работы
+                using (var db = new DormitoryManagerBDEntities())
                 {
-                    if (month == 12)
+                    var resident = db.Tenants.FirstOrDefault(r => r.ID_tenant == selectedResidentId);
+                    if (resident == null)
                     {
-                        year += 1;
-                        month = 1;
+                        throw new Exception("Такого жильца нету в базе данных.");
+                    }
+
+                    // счётчик даты для более точного определения дня выплаты квитанции
+                    DateTime DataPay;
+                    int year = DateTime.Now.Year;
+                    int month = DateTime.Now.Month;
+                    int day = resident.DateChecin.Value.Day;
+                    if (day > DateTime.Now.Day)
+                    {
+                        DataPay = new DateTime(year, month, day);
                     }
                     else
                     {
-                        month += 1;
+                        if (month == 12)
+                        {
+                            year += 1;
+                            month = 1;
+                        }
+                        else
+                        {
+                            month += 1;
+                        }
+                        DataPay = new DateTime(year, month, day);
                     }
-                    DataPay = new DateTime(year, month, day);
+
+                    // Добавление текста в документ Word
+                    var paragraph = wordDoc.Paragraphs.Add();
+                    paragraph.Range.Text = "ФИО жильца: " + resident.TenantFullName + "\n";
+                    paragraph.Range.Text += "Номер комнаты: " + resident.Room + "\n";
+                    paragraph.Range.Text += "Дата оплаты квитанции: " + receipt.PayData.Value.ToShortDateString() + "\n";
+                    paragraph.Range.Text += "Сумма оплаты за проживание: " + receipt.PayLiving.ToString() + "\n";
+                    paragraph.Range.Text += "Сумма оплаты доп. услуг: " + new Random().Next(1000, 3000).ToString() + "\n";
+                    paragraph.Range.Text += "Итоговая сумма оплаты: " + (receipt.PayLiving + new Random().Next(1000, 3000)).ToString() + "\n";
+
+                    // Установка имени файла
+                    var saveFileDialog = new SaveFileDialog();
+                    saveFileDialog.Filter = "Word documents|*.docx";
+                    saveFileDialog.Title = "Введите имя файла";
+                    saveFileDialog.FileName = receipt.PayData.Value.ToShortDateString() + "_" + resident.TenantFullName + ".docx";
+                    if (saveFileDialog.ShowDialog() == true)
+                    {
+                        wordDoc.SaveAs2(saveFileDialog.FileName);
+                    }
                 }
 
-                var receipt = new Receipt()
-                {
-                    ReceiptTenant = resident.ID_tenant, // выбранный жилец из выпадающего списка
-                    PayLiving = new Random().Next(1000, 5000), // имитация необходимой оплаты за проживание
-                    PayData = DataPay // дата выплаты квитанции
-                };
-
-                var paragraph = wordDoc.Paragraphs.Add();
-                paragraph.Range.Text = "ФИО жильца: " + resident.TenantFullName + "\n";
-                paragraph.Range.Text += "Номер комнаты: " + resident.Room + "\n";
-                paragraph.Range.Text += "Дата оплаты квитанции: " + receipt.PayData.Value.ToShortDateString() + "\n";
-                paragraph.Range.Text += "Сумма оплаты за проживание: " + receipt.PayLiving.ToString() + "\n";
-                //paragraph.Range.Text += "Сумма оплаты доп. услуг: " + receipt.PayAddService.ToString() + "\n";
-                // paragraph.Range.Text += "Итоговая сумма оплаты: " + (receipt.PayLiving + receipt.PayAddService).ToString() + "\n";
-                paragraph.Range.Text += "Итоговая сумма оплаты: " + receipt.PayLiving.ToString() + "\n";
+                // Сохранение документа Word
+                wordDoc.Close();
+                wordApp.Quit();
             }
-
-            // Сохранение документа Word
-            var saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "Word documents|*.docx";
-            if (saveFileDialog.ShowDialog() == true)
+            else
             {
-                wordDoc.SaveAs2(saveFileDialog.FileName);
+                // Вывод сообщения об ошибке, если элемент не выбран
+                MessageBox.Show("Выберите жильца из выпадающего списка.");
             }
-            wordDoc.Close();
-            wordApp.Quit();
         }
 
 

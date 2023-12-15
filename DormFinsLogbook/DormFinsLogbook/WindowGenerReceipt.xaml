@@ -10,7 +10,7 @@
 
         <TextBlock x:Name="TenantInfoTextBox" FontSize="20" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0 50" Foreground="#4A67F7"/>
 
-        <ComboBox Name="TenantsComboBox" Text="{Binding TenantFullName}" DisplayMemberPath="FullNameTenants"  VerticalAlignment="Center" HorizontalAlignment="Center" Width="260" SelectionChanged="TenantsComboBox_SelectionChanged"/>
+        <ComboBox Name="TenantsComboBox" Text="{Binding TenantFullName}" DisplayMemberPath="TenantFullName"  VerticalAlignment="Center" HorizontalAlignment="Center" Width="260" SelectionChanged="TenantsComboBox_SelectionChanged"/>
 
         <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="20">
             <Button Content="Назад" Click="btnBackMenu_Click"  Width="120" Height="40" VerticalAlignment="Bottom"  Margin="16"/>

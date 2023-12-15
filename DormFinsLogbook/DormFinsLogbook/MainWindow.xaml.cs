@@ -20,7 +20,7 @@ namespace DormFinsLogbook
     {
         private DormitoryManagerBDEntities _db = new DormitoryManagerBDEntities();
         private int _accessCode;
-        private bool _isCodeValid = true;
+        private bool _isCodeValid = false;
 
         public MainWindow()
         {
@@ -30,11 +30,13 @@ namespace DormFinsLogbook
             tbAccessCode.IsEnabled = false;
             btnSMSgen.IsEnabled = false;
             btnCheckPass.IsEnabled = false;
+            txtLogin.Focus();
         }
 
         private void btnCancel_Click(object sender, RoutedEventArgs e)
         {
             // Сбросавыем вводимые значения и возвращаем элементы окна в иначальное состояние
+            txtLogin.Focus();
             txtLogin.Clear();
             txtPassword.Clear();
             tbAccessCode.Clear();
@@ -125,13 +127,20 @@ namespace DormFinsLogbook
             }
         }
 
-
         private void AccessCodeTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             // Проверка кода доступа и открытие доступа к функционалу системы
             if (e.Key == Key.Enter)
             {
-                if (_isCodeValid && tbAccessCode.Text == _accessCode.ToString())
+                // Если код не введен, то выводится сообщение об ошибке
+                if (string.IsNullOrWhiteSpace(tbAccessCode.Text))
+                {
+                    MessageBox.Show("Введите код доступа.");
+                    return;
+                }
+
+                // Если код введен, то выполняется проверка
+                if (tbAccessCode.Text == _accessCode.ToString())
                 {
                     var query = from user in _db.Users
                                 join login in _db.Logins on user.UserLogin equals login.ID_login
@@ -150,6 +159,8 @@ namespace DormFinsLogbook
                 }
                 else
                 {
+                    // Если код неверный, то значение переменной _isCodeValid устанавливается в true, чтобы при следующей попытке проверка кода доступа не выполнялась
+                    _isCodeValid = true;
                     MessageBox.Show("Неверный код доступа из СМС. Попробуйте ещё раз.");
                 }
             }
@@ -157,13 +168,14 @@ namespace DormFinsLogbook
 
         private async void GenerateAccessCode()
         {
+            tbAccessCode.Focus();
             // Генерация рандомного кода из 4 цифр
             _accessCode = new Random().Next(1000, 10000);
             MessageBox.Show($"Код доступа: {_accessCode}");
-            _isCodeValid = true;
 
-            await Task.Delay(10000);
+            await Task.Delay(20000);
             _isCodeValid = false;
         }
+
     }
 }

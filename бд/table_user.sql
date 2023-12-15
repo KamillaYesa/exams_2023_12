@@ -1,0 +1,28 @@
+USE [DormitoryManagerBD]
+GO
+
+/****** Object:  Table [dbo].[User]    Script Date: 15.12.2023 6:25:14 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[User](
+	[ID_user] [int] NOT NULL,
+	[UserFullName] [nvarchar](40) NULL,
+	[UserLogin] [int] NULL,
+ CONSTRAINT [PK_User] PRIMARY KEY CLUSTERED 
+(
+	[ID_user] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[User]  WITH CHECK ADD  CONSTRAINT [FK_User_Login] FOREIGN KEY([UserLogin])
+REFERENCES [dbo].[Login] ([ID_login])
+GO
+
+ALTER TABLE [dbo].[User] CHECK CONSTRAINT [FK_User_Login]
+GO
+
